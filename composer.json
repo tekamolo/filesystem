@@ -1,0 +1,25 @@
+{
+    "name": "afernandez/file-system",
+    "description": "file system look a like",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Alfonso Fernandez",
+            "email": "afernandez@nord-pay.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "phpunit/phpunit": "^7.5",
+        "symfony/console": "^4.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "FileSystem\\": "src\\",
+            "Tests\\": "Tests\\"
+        }
+    },
+    "require-dev": {
+        "symfony/var-dumper": "^5.1"
+    }
+}
