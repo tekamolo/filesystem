@@ -3,6 +3,7 @@
 
 namespace FileSystem\Domain;
 
+use FileSystem\Shared\AggregateId;
 use FileSystem\Shared\ResourceCollection;
 
 /**
@@ -14,7 +15,7 @@ use FileSystem\Shared\ResourceCollection;
 
 interface MemoryInterface
 {
-    public function get(string $userId): ResourceInterface;
+    public function get(AggregateId $aggregateId);
 
-    public function save(string $userId,ResourceCollection $resource): void;
+    public function save(AggregateId $aggregateId,ResourceCollection $resource): void;
 }

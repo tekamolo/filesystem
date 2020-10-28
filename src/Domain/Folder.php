@@ -14,7 +14,7 @@ use FileSystem\Shared\ReferenceCollection;
 class Folder implements TypeInterface,ResourceInterface
 {
     private FolderId $folderId;
-    private string $root;
+    private string $name;
     private DateTime $created;
     private ReferenceCollection $childResources;
     private ?FolderId $parentFolderId;
@@ -22,7 +22,7 @@ class Folder implements TypeInterface,ResourceInterface
     public function __construct(FolderId $folderId, string $root, DateTime $created,?FolderId $parentFolderId)
     {
         $this->folderId = $folderId;
-        $this->root = $root;
+        $this->name = $root;
         $this->created = $created;
         $this->childResources = new ReferenceCollection();
         $this->parentFolderId = $parentFolderId;
@@ -39,9 +39,9 @@ class Folder implements TypeInterface,ResourceInterface
     /**
      * @return string
      */
-    public function getRoot(): string
+    public function getName(): string
     {
-        return $this->root;
+        return $this->name;
     }
 
     /**

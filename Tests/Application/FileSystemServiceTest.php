@@ -14,43 +14,11 @@ use Symfony\Component\VarDumper\VarDumper;
 
 class FileSystemServiceTest extends TestCase
 {
-
     private FileSystemService $service;
-
-    private function getResources(){
-        return [
-            "Home\\" => [
-                "datetime" => "2012-09-28 19:35:00",
-                "resources"=>[
-                    "Home\\MyProject" => "2012-09-28 19:35:00"
-                ],
-                "isDirectory" => true,
-            ],
-            "Home\\MyProject" => [
-                "datetime" => "2012-09-28 19:35:00",
-                "resources"=>[
-                    "Home\\MyProject\\images" => "2013-02-01 9:35:00",
-                    "Home\\MyProject\\src" => "2013-02-01 9:35:00",
-                    "Home\\MyProject\\tests" => "2013-02-01 9:35:00",
-                    "Readme.md" => "2013-02-01 9:46:03",
-                ],
-                "isDirectory" => true,
-            ],
-            "Home\\MyProject\\images" => [
-                "datetime" => "2013-02-01 9:35:00",
-                "resources"=>[
-                    "main_logo.pgn" => "2013-02-01 9:35:00",
-                    "logo_small.pgn" => "2013-02-01 9:35:00",
-                    "icons.png" => "2013-02-01 9:35:00",
-                ],
-                "isDirectory" => true,
-            ],
-        ];
-    }
 
     public function setUp()
     {
-       $this->service = new FileSystemService(new FileSystemHandler(new Pointer()),new Reposi);
+       $this->service = new FileSystemService(new FileSystemHandler(new Pointer()));
     }
 
     public function testFolderCreation(){
@@ -150,6 +118,16 @@ class FileSystemServiceTest extends TestCase
         $this->service->createFolder($folderImagesId,"Home\\MyProject\\images",new DateTime("2013-02-01 09:35:00"));
         $this->service->createFolder(new FolderId("Home\\MyProject\\src"),"Home\\MyProject\\src",new DateTime("2013-02-01 09:35:00"));
         $this->service->createFolder(new FolderId("Home\\MyProject\\test"),"Home\\MyProject\\test",new DateTime("2013-02-01 09:35:00"));
+        $this->service->createFile(new FileId("README.md"),"README.md",new DateTime("2013-02-01 09:35:00"),$folderMyProjectId);
+        $this->assertEquals(
+            'Home\MyProject\images 2013-02-01 09:35:00 isDirectory: yes 
+ Home\MyProject\src 2013-02-01 09:35:00 isDirectory: yes 
+ Home\MyProject\test 2013-02-01 09:35:00 isDirectory: yes 
+ README.md 2013-02-01 09:35:00 isDirectory: no 
+ ',
+            $this->service->displayDirectoryResources()
+        );
+
         $this->service->enterFolder($folderImagesId);
         $this->assertEquals("Home\MyProject\images created at 2013-02-01 09:35:00",$this->service->getCurrentFolderDetails());
 
@@ -167,5 +145,13 @@ class FileSystemServiceTest extends TestCase
         $this->assertEquals($fileMainLogoId,$resources[0]->getAggregateId());
         $this->assertEquals($fileSmallLogoId,$resources[1]->getAggregateId());
         $this->assertEquals($iconId,$resources[2]->getAggregateId());
+
+        $this->assertEquals(
+            'main_logo.png 2013-02-01 09:35:00 isDirectory: no 
+ logo_small.png 2013-02-01 09:35:00 isDirectory: no 
+ icons.png 2013-02-01 09:35:00 isDirectory: no 
+ ',
+            $this->service->displayDirectoryResources()
+        );
     }
 }

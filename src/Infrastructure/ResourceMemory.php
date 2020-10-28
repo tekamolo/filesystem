@@ -22,16 +22,16 @@ class ResourceMemory implements MemoryInterface
      */
     private $folders = [];
 
-    public function get(string $userId): ResourceInterface
+    public function get(AggregateId $aggregateId)
     {
-        if (!isset($this->$folders[$userId])) {
+        if (!isset($this->$folders[$aggregateId->value()])) {
             throw new ItemNotInMemoryException();
         }
-        return $this->folders[$userId];
+        return $this->folders[$aggregateId->value()];
     }
 
-    public function save(string $userId,ResourceCollection $resources): void
+    public function save(AggregateId $aggregateId,ResourceCollection $resources): void
     {
-        $this->folders[$userId] = $resources;
+        $this->folders[$aggregateId->value()] = $resources;
     }
 }

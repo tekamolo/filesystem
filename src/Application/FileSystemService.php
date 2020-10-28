@@ -3,6 +3,8 @@ namespace FileSystem\Application;
 
 use FileSystem\Domain\FileId;
 use FileSystem\Domain\FolderId;
+use FileSystem\Domain\ResourceInterface;
+use FileSystem\Domain\TypeInterface;
 use FileSystem\Shared\DateTime;
 use FileSystem\Shared\ResourceCollection;
 
@@ -61,11 +63,23 @@ final class FileSystemService
     public function getCurrentFolderDetails(): string
     {
         $folder = $this->fileSystemHandler->getCurrentPointerFolderLocation();
-        return $folder->getRoot(). " created at " .$folder->getCreated()->getDatetimeFileSystem();
+        return $folder->getName(). " created at " .$folder->getCreated()->getDatetimeFileSystem();
     }
 
     public function getCurrentFolderResources(): ResourceCollection
     {
         return $this->fileSystemHandler->getCurrentFolderResources();
+    }
+
+    public function displayDirectoryResources(): string
+    {
+        /** @var ResourceInterface|TypeInterface $r */
+        $output = "";
+        foreach ($this->fileSystemHandler->getCurrentFolderResources() as $r){
+            $isDirectory = $r->isDirectory() ? "yes" : "no";
+            $output .= $r->getName()." ".$r->getCreated()->getDatetimeFileSystem()." isDirectory: ".$isDirectory." \n ";
+        }
+
+        return $output;
     }
 }

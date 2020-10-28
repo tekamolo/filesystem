@@ -12,4 +12,6 @@ interface ResourceInterface
     public function getAggregateId(): AggregateId;
 
     public function getCreated(): DateTime;
+
+    public function getName(): string;
 }
