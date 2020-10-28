@@ -6,6 +6,7 @@ namespace FileSystem\Domain;
 
 use FileSystem\Shared\AggregateId;
 use FileSystem\Shared\DateTime;
+use FileSystem\Shared\ValueObjectString;
 
 interface ResourceInterface
 {
@@ -13,5 +14,5 @@ interface ResourceInterface
 
     public function getCreated(): DateTime;
 
-    public function getName(): string;
+    public function getName(): ValueObjectString;
 }

@@ -24,7 +24,8 @@ class ResourceCollection extends \ArrayIterator
         return $this->offsetGet($aggregateId->value());
     }
 
-    public function getByStringReference(string $reference){
+    public function getByStringReference(string $reference): ResourceInterface
+    {
         if(!$this->offsetExists($reference))
             throw new ItemNotInCollection();
         return $this->offsetGet($reference);

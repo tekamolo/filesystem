@@ -3,7 +3,7 @@ namespace FileSystem\Domain;
 
 use FileSystem\Shared\AggregateId;
 
-class FolderId extends AggregateId
+final class FolderId extends AggregateId
 {
 
 }

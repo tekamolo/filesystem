@@ -23,8 +23,7 @@ FileSystem Hanldler es la capa que se encargará de coordinar el dominio.
 El ejercicio solo habla de navegación. Para navegar a través de las carpetas primero
 deben crearse. y es lo que emulo en los tests: la creación para luego navegar.
 Para identificar a las entidades (Aggregates) uso una clase AggredateId que en teoría
-tiene que generar un id único. Ya que cada fichero y carpeta es única. Aqui no tomo en
-cuenta que solo un fichero tiene que ser único igualmente (generalmente los sistemas operan asi).
+tiene que generar un id único. Ya que cada fichero y carpeta es única.
 
 Para moverme a través de las carpetas utilizo un punteador (pointer) que se va "desplazando"
 y cuando nos encontramos dentro de una carpeta y creamos un fichero, el fichero pertenecerá

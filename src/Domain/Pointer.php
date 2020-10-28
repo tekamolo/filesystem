@@ -24,7 +24,7 @@ class Pointer
         return $this->folder;
     }
 
-    public function getFolderResources(): ReferenceCollection
+    public function getFolderResourcesReferences(): ReferenceCollection
     {
         return $this->folder->getResources();
     }

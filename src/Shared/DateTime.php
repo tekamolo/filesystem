@@ -6,7 +6,7 @@ namespace FileSystem\Shared;
 
 use DateTimeZone;
 
-class DateTime extends \DateTime
+final class DateTime extends \DateTimeImmutable
 {
     public function __construct($time = 'now', DateTimeZone $timezone = null)
     {

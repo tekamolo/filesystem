@@ -4,15 +4,16 @@ namespace FileSystem\Domain;
 
 use FileSystem\Shared\AggregateId;
 use FileSystem\Shared\DateTime;
+use FileSystem\Shared\ValueObjectString;
 
 class File implements TypeInterface,ResourceInterface
 {
     private AggregateId $id;
-    private string $name;
+    private FileName $name;
     private DateTime $created;
     private FolderId $containerFolderId;
 
-    public function __construct(FileId $id,string $name,DateTime $created,FolderId $containerFolderId)
+    public function __construct(FileId $id,FileName $name,DateTime $created,FolderId $containerFolderId)
     {
         $this->id = $id;
         $this->name = $name;
@@ -31,7 +32,7 @@ class File implements TypeInterface,ResourceInterface
     /**
      * @return mixed
      */
-    public function getName(): string
+    public function getName(): ValueObjectString
     {
         return $this->name;
     }

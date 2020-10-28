@@ -2,9 +2,15 @@
 namespace FileSystem\Application;
 
 use FileSystem\Domain\FileId;
+use FileSystem\Domain\FileName;
 use FileSystem\Domain\FolderId;
+use FileSystem\Domain\FolderPath;
+use FileSystem\Domain\IdFactory;
+use FileSystem\Domain\MemoryInterface;
 use FileSystem\Domain\ResourceInterface;
 use FileSystem\Domain\TypeInterface;
+use FileSystem\Infrastructure\ResourceMemory;
+use FileSystem\Shared\AggregateId;
 use FileSystem\Shared\DateTime;
 use FileSystem\Shared\ResourceCollection;
 
@@ -19,15 +25,24 @@ use FileSystem\Shared\ResourceCollection;
 final class FileSystemService
 {
     private FileSystemHandler $fileSystemHandler;
+    private MemoryInterface $memory;
 
-    public function __construct(FileSystemHandler $fileSystemHandler)
+    /**
+     * Como comentado la interface Memoria que pretende actuar como un repositorio o un pack hibernate/sleep tiene
+     * como objetivo interactuar con el aggregate root. Aqui FileSystem que contiene los aggregates File y Folder
+     * como el ejercicio no pide esto lo dejo aqui ya que es un pattern habitual
+     * FileSystemService constructor.
+     * @param FileSystemHandler $fileSystemHandler
+     * @param MemoryInterface $memory
+     */
+    public function __construct(FileSystemHandler $fileSystemHandler, MemoryInterface $memory)
     {
         $this->fileSystemHandler = $fileSystemHandler;
     }
 
-    public function createFolder(FolderId $folderId,string $name,DateTime $dateTime): void
+    public function createFolder(FolderPath $name,DateTime $dateTime): FolderId
     {
-        $this->fileSystemHandler->createFolder($folderId,$name,$dateTime);
+        return $this->fileSystemHandler->createFolder($name,$dateTime);
     }
 
     /**
@@ -45,9 +60,9 @@ final class FileSystemService
         $this->fileSystemHandler->goToParentFolder();
     }
 
-    public function createFile(FileId $fileId,string $name, DateTime $dateTime, FolderId $containerFolderId): void
+    public function createFile(FileName $name, DateTime $dateTime): FileId
     {
-        $this->fileSystemHandler->createFile($fileId,$name,$dateTime,$containerFolderId);
+        return $this->fileSystemHandler->createFile($name,$dateTime);
     }
 
     public function deleteFile(FileId $fileId): void
@@ -63,7 +78,13 @@ final class FileSystemService
     public function getCurrentFolderDetails(): string
     {
         $folder = $this->fileSystemHandler->getCurrentPointerFolderLocation();
-        return $folder->getName(). " created at " .$folder->getCreated()->getDatetimeFileSystem();
+        return $folder->getName()->get(). " created at " .$folder->getCreated()->getDatetimeFileSystem();
+    }
+
+    public function getCurrentFolderId(): FolderId
+    {
+        $folder = $this->fileSystemHandler->getCurrentPointerFolderLocation();
+        return $folder->getAggregateId();
     }
 
     public function getCurrentFolderResources(): ResourceCollection
@@ -77,7 +98,7 @@ final class FileSystemService
         $output = "";
         foreach ($this->fileSystemHandler->getCurrentFolderResources() as $r){
             $isDirectory = $r->isDirectory() ? "yes" : "no";
-            $output .= $r->getName()." ".$r->getCreated()->getDatetimeFileSystem()." isDirectory: ".$isDirectory." \n ";
+            $output .= $r->getName()->get()." ".$r->getCreated()->getDatetimeFileSystem()." isDirectory: ".$isDirectory." \n ";
         }
 
         return $output;

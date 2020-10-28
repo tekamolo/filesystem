@@ -6,7 +6,7 @@ namespace FileSystem\Domain;
 
 use FileSystem\Shared\AggregateId;
 
-final class FileId extends AggregateId
+final class FileSystemId extends AggregateId
 {
 
 }

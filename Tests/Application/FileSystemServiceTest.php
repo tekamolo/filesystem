@@ -2,15 +2,20 @@
 
 namespace Tests\Application;
 
+use FileSystem\Application\Exception\ExceptionDeletingFolderYouAreIn;
+use FileSystem\Application\Exception\ResourceWithTheSameNameAlreadyExistException;
 use FileSystem\Application\FileSystemHandler;
 use FileSystem\Application\FileSystemService;
-use FileSystem\Domain\FileId;
+use FileSystem\Domain\FileName;
+use FileSystem\Domain\FileSystem;
+use FileSystem\Domain\FileSystemId;
+use FileSystem\Domain\FolderPath;
 use FileSystem\Domain\Pointer;
-use FileSystem\Domain\FolderId;
 use FileSystem\Domain\ResourceInterface;
+use FileSystem\Infrastructure\ResourceMemory;
+use FileSystem\Shared\AggregateId;
 use FileSystem\Shared\DateTime;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\VarDumper\VarDumper;
 
 class FileSystemServiceTest extends TestCase
 {
@@ -18,64 +23,99 @@ class FileSystemServiceTest extends TestCase
 
     public function setUp()
     {
-       $this->service = new FileSystemService(new FileSystemHandler(new Pointer()));
+       $this->service = new FileSystemService(
+           new FileSystemHandler(
+               new Pointer(),
+               new FileSystem(new FileSystemId("1"))
+           ),
+           new ResourceMemory()
+       );
     }
 
     public function testFolderCreation(){
-        $folderId = new FolderId("Directory\\");
-        $this->service->createFolder($folderId,"Home\\",new DateTime("2012-09-28 19:35:00"));
+        $folderId = $this->service->createFolder(new FolderPath("Home/"),new DateTime("2012-09-28 19:35:00"));
         /** @var $directoryResources ResourceInterface[] */
         $directoryResources = $this->service->getCurrentFolderResources();
-        $directoryResources[0]->getAggregateId();
+        $directoryResources[0]->getName();
 
+        $this->assertEquals("Home/",$directoryResources[0]->getName()->get());
         $this->assertEquals($folderId,$directoryResources[0]->getAggregateId());
     }
 
     public function testEnterFolder(){
-        $folderId = new FolderId("Directory\\");
-        $this->service->createFolder($folderId,"Home\\",new DateTime("2012-09-28 19:35:00"));
+        $folderId = $this->service->createFolder(new FolderPath("Home/"),new DateTime("2012-09-28 19:35:00"));
         $this->service->enterFolder($folderId);
 
-        $this->assertEquals("Home\ created at 2012-09-28 19:35:00",$this->service->getCurrentFolderDetails());
+        $this->assertEquals("Home/ created at 2012-09-28 19:35:00",$this->service->getCurrentFolderDetails());
+        $this->assertEquals($folderId,$this->service->getCurrentFolderId());
     }
 
     public function testGoBackPreviousFolder(){
-        $folderId = new FolderId("Home\\");
-        $this->service->createFolder($folderId,"Home\\",new DateTime("2012-09-28 19:35:00"));
-        $this->service->enterFolder($folderId);
-        $this->assertEquals("Home\ created at 2012-09-28 19:35:00",$this->service->getCurrentFolderDetails());
+        $baseFolderId = $this->service->createFolder(new FolderPath("Home/"),new DateTime("2012-09-28 19:35:00"));
+        $this->service->enterFolder($baseFolderId);
+        $this->assertEquals("Home/ created at 2012-09-28 19:35:00",$this->service->getCurrentFolderDetails());
+        $this->assertEquals($baseFolderId,$this->service->getCurrentFolderId());
 
-        $folderId = new FolderId("Home\\MyProject");
-        $this->service->createFolder($folderId,"Home\\MyProject",new DateTime("2012-09-28 19:35:00"));
-        $this->service->enterFolder($folderId);
-        $this->assertEquals("Home\MyProject created at 2012-09-28 19:35:00",$this->service->getCurrentFolderDetails());
+        $folderProjectId = $this->service->createFolder(new FolderPath("Home/MyProject/"),new DateTime("2012-09-28 19:35:00"));
+        $this->service->enterFolder($folderProjectId);
+        $this->assertEquals("Home/MyProject/ created at 2012-09-28 19:35:00",$this->service->getCurrentFolderDetails());
+        $this->assertEquals($folderProjectId,$this->service->getCurrentFolderId());
 
         $this->service->goToParentFolder();
-        $this->assertEquals("Home\ created at 2012-09-28 19:35:00",$this->service->getCurrentFolderDetails());
+        $this->assertEquals("Home/ created at 2012-09-28 19:35:00",$this->service->getCurrentFolderDetails());
+        $this->assertEquals($baseFolderId,$this->service->getCurrentFolderId());
     }
 
     public function testCreateResource(){
-        $folderId = new FolderId("Home\\");
-        $this->service->createFolder($folderId,"Home\\",new DateTime("2012-09-28 19:35:00"));
+        $folderId = $this->service->createFolder(new FolderPath("Home/"),new DateTime("2012-09-28 19:35:00"));
         $this->service->enterFolder($folderId);
-        $this->assertEquals("Home\ created at 2012-09-28 19:35:00",$this->service->getCurrentFolderDetails());
-
-        $fileAggregateId = new FileId("main_logo.png");
-        $this->service->createFile($fileAggregateId,"main_logo.png",new DateTime("2013-02-01 09:35:00"),$folderId);
+        $fileAggregateId = $this->service->createFile(new FileName("main_logo.png"),new DateTime("2013-02-01 09:35:00"));
 
         /** @var $resources ResourceInterface[] */
         $resources = $this->service->getCurrentFolderResources();
         $this->assertEquals($fileAggregateId,$resources[0]->getAggregateId());
     }
 
-    public function testDeleteFile(){
-        $folderId = new FolderId("Home\\");
-        $this->service->createFolder($folderId,"Home\\",new DateTime("2012-09-28 19:35:00"));
+    public function testCannotCreateTwiceTheSameFileAtTheSameLocation(){
+        $folderId = $this->service->createFolder(new FolderPath("Home/"),new DateTime("2012-09-28 19:35:00"));
         $this->service->enterFolder($folderId);
-        $this->assertEquals("Home\ created at 2012-09-28 19:35:00",$this->service->getCurrentFolderDetails());
 
-        $fileAggregateId = new FileId("main_logo.png");
-        $this->service->createFile($fileAggregateId,"main_logo.png",new DateTime("2013-02-01 09:35:00"),$folderId);
+        $this->expectException(ResourceWithTheSameNameAlreadyExistException::class);
+        $this->expectExceptionMessage("The resource main_logo.png already exists, please chose another name");
+        $this->service->createFile(new FileName("main_logo.png"),new DateTime("2013-02-01 09:35:00"));
+        $this->service->createFile(new FileName("main_logo.png"),new DateTime("2013-02-01 09:35:00"));
+    }
+
+    public function testCannotCreateTwiceTheSameFolderAtTheSameLocation(){
+        $this->expectException(ResourceWithTheSameNameAlreadyExistException::class);
+        $this->expectExceptionMessage("The resource Home/ already exists, please chose another name");
+        $this->service->createFolder(new FolderPath("Home/"),new DateTime("2012-09-28 19:35:00"));
+        $this->service->createFolder(new FolderPath("Home/"),new DateTime("2012-09-28 19:35:00"));
+    }
+
+    public function testCannotDeleteCurrentFolder(){
+        $folderId = $this->service->createFolder(new FolderPath("Home/"),new DateTime("2012-09-28 19:35:00"));
+        $this->service->enterFolder($folderId);
+        $this->expectException(ExceptionDeletingFolderYouAreIn::class);
+        $this->service->deleteFolder($folderId);
+    }
+
+    public function testCannotDeleteParentFolder(){
+        $folderId = $this->service->createFolder(new FolderPath("Home/"),new DateTime("2012-09-28 19:35:00"));
+        $this->service->enterFolder($folderId);
+        $folderProjectId = $this->service->createFolder(new FolderPath("Home/MyProject/"),new DateTime("2012-09-28 19:35:00"));
+        $this->service->enterFolder($folderProjectId);
+
+        $this->expectException(ExceptionDeletingFolderYouAreIn::class);
+        $this->service->deleteFolder($folderId);
+    }
+
+    public function testDeleteFile(){
+        $folderId = $this->service->createFolder(new FolderPath("Home/"),new DateTime("2012-09-28 19:35:00"));
+        $this->service->enterFolder($folderId);
+        $this->assertEquals($folderId,$this->service->getCurrentFolderId());
+
+        $fileAggregateId = $this->service->createFile(new FileName("main_logo.png"),new DateTime("2013-02-01 09:35:00"));
         $this->service->deleteFile($fileAggregateId);
 
         /** @var $resources ResourceInterface[] */
@@ -84,17 +124,14 @@ class FileSystemServiceTest extends TestCase
     }
 
     public function testDeleteFolder(){
-        $homeFolderId = new FolderId("Home\\");
-        $this->service->createFolder($homeFolderId,"Home\\",new DateTime("2012-09-28 19:35:00"));
+        $homeFolderId = $this->service->createFolder(new FolderPath("Home/"),new DateTime("2012-09-28 19:35:00"));
         $this->service->enterFolder($homeFolderId);
-        $this->assertEquals("Home\ created at 2012-09-28 19:35:00",$this->service->getCurrentFolderDetails());
+        $this->assertEquals("Home/ created at 2012-09-28 19:35:00",$this->service->getCurrentFolderDetails());
 
-        $folderProjectId = new FolderId("Home\\MyProject");
-        $this->service->createFolder($folderProjectId,"Home\\MyProject",new DateTime("2013-02-01 09:35:00"));
+        $folderProjectId = $this->service->createFolder(new FolderPath("Home/MyProject/"),new DateTime("2013-02-01 09:35:00"));
         $this->service->enterFolder($folderProjectId);
-        $this->assertEquals("Home\MyProject created at 2013-02-01 09:35:00",$this->service->getCurrentFolderDetails());
-        $fileAggregateId = new FileId("main_logo.png");
-        $this->service->createFile($fileAggregateId,"main_logo.png",new DateTime("2013-02-01 09:35:00"),$homeFolderId);
+        $this->assertEquals("Home/MyProject/ created at 2013-02-01 09:35:00",$this->service->getCurrentFolderDetails());
+        $this->service->createFile(new FileName("main_logo.png"),new DateTime("2013-02-01 09:35:00"));
 
         $this->service->enterFolder($homeFolderId);
         $this->service->deleteFolder($folderProjectId);
@@ -104,40 +141,34 @@ class FileSystemServiceTest extends TestCase
     }
 
     public function testFileSystemServiceMockSubject(){
-        $folderHomeId = new FolderId("Home\\");
-        $this->service->createFolder($folderHomeId,"Home\\",new DateTime("2012-09-28 19:35:00"));
+        $folderHomeId =$this->service->createFolder(new FolderPath("Home/"),new DateTime("2012-09-28 19:35:00"));
         $this->service->enterFolder($folderHomeId);
-        $this->assertEquals("Home\ created at 2012-09-28 19:35:00",$this->service->getCurrentFolderDetails());
+        $this->assertEquals("Home/ created at 2012-09-28 19:35:00",$this->service->getCurrentFolderDetails());
 
-        $folderMyProjectId = new FolderId("Home\\MyProject");
-        $this->service->createFolder($folderMyProjectId,"Home\\MyProject",new DateTime("2012-09-28 19:35:00"));
+        $folderMyProjectId = $this->service->createFolder(new FolderPath("Home/MyProject/"),new DateTime("2012-09-28 19:35:00"));
         $this->service->enterFolder($folderMyProjectId);
-        $this->assertEquals("Home\MyProject created at 2012-09-28 19:35:00",$this->service->getCurrentFolderDetails());
+        $this->assertEquals("Home/MyProject/ created at 2012-09-28 19:35:00",$this->service->getCurrentFolderDetails());
 
-        $folderImagesId = new FolderId("Home\\MyProject\\images");
-        $this->service->createFolder($folderImagesId,"Home\\MyProject\\images",new DateTime("2013-02-01 09:35:00"));
-        $this->service->createFolder(new FolderId("Home\\MyProject\\src"),"Home\\MyProject\\src",new DateTime("2013-02-01 09:35:00"));
-        $this->service->createFolder(new FolderId("Home\\MyProject\\test"),"Home\\MyProject\\test",new DateTime("2013-02-01 09:35:00"));
-        $this->service->createFile(new FileId("README.md"),"README.md",new DateTime("2013-02-01 09:35:00"),$folderMyProjectId);
+        $folderImagesId = $this->service->createFolder(new FolderPath("Home/MyProject/images/"),new DateTime("2013-02-01 09:35:00"));
+        $this->service->createFolder(new FolderPath("Home/MyProject/src/"),new DateTime("2013-02-01 09:35:00"));
+        $this->service->createFolder(new FolderPath("Home/MyProject/test/"),new DateTime("2013-02-01 09:35:00"));
+        $this->service->createFile(new FileName("README.md"),new DateTime("2013-02-01 09:35:00"));
         $this->assertEquals(
-            'Home\MyProject\images 2013-02-01 09:35:00 isDirectory: yes 
- Home\MyProject\src 2013-02-01 09:35:00 isDirectory: yes 
- Home\MyProject\test 2013-02-01 09:35:00 isDirectory: yes 
+            'Home/MyProject/images/ 2013-02-01 09:35:00 isDirectory: yes 
+ Home/MyProject/src/ 2013-02-01 09:35:00 isDirectory: yes 
+ Home/MyProject/test/ 2013-02-01 09:35:00 isDirectory: yes 
  README.md 2013-02-01 09:35:00 isDirectory: no 
  ',
             $this->service->displayDirectoryResources()
         );
 
         $this->service->enterFolder($folderImagesId);
-        $this->assertEquals("Home\MyProject\images created at 2013-02-01 09:35:00",$this->service->getCurrentFolderDetails());
+        $this->assertEquals("Home/MyProject/images/ created at 2013-02-01 09:35:00",$this->service->getCurrentFolderDetails());
 
 
-        $fileMainLogoId = new FileId("main_logo.png");
-        $this->service->createFile($fileMainLogoId,"main_logo.png",new DateTime("2013-02-01 09:35:00"),$folderImagesId);
-        $fileSmallLogoId = new FileId("logo_small.png");
-        $this->service->createFile($fileSmallLogoId,"logo_small.png",new DateTime("2013-02-01 09:35:00"),$folderImagesId);
-        $iconId = new FileId("icons.png");
-        $this->service->createFile($iconId,"icons.png",new DateTime("2013-02-01 09:35:00"),$folderImagesId);
+        $fileMainLogoId = $this->service->createFile(new FileName("main_logo.png"),new DateTime("2013-02-01 09:35:00"));
+        $fileSmallLogoId =$this->service->createFile(new FileName("logo_small.png"),new DateTime("2013-02-01 09:35:00"));
+        $iconId = $this->service->createFile(new FileName("icons.png"),new DateTime("2013-02-01 09:35:00"));
 
 
         /** @var $resources ResourceInterface[] */

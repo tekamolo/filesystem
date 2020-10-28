@@ -30,8 +30,8 @@ class ResourceMemory implements MemoryInterface
         return $this->folders[$aggregateId->value()];
     }
 
-    public function save(AggregateId $aggregateId,ResourceCollection $resources): void
+    public function save(AggregateId $aggregateId,ResourceInterface $resource): void
     {
-        $this->folders[$aggregateId->value()] = $resources;
+        $this->folders[$aggregateId->value()] = $resource;
     }
 }

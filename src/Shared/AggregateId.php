@@ -15,9 +15,10 @@ class AggregateId
     /**
      * @param string $string
      */
-    public function __construct(string $string = null)
+    public function __construct(string $string)
     {
-        $this->value = uniqid($string);
+        //o implementar una solución que garantiza la individualidad del id
+        $this->value = md5($string);
     }
 
     public function value(): string

@@ -5,6 +5,7 @@ namespace FileSystem\Domain;
 use FileSystem\Shared\AggregateId;
 use FileSystem\Shared\DateTime;
 use FileSystem\Shared\ReferenceCollection;
+use FileSystem\Shared\ValueObjectString;
 
 /**
  * He tenido que diseñar estas entidades la cual folder lleva referencias de otras instancias Folder y File
@@ -14,15 +15,15 @@ use FileSystem\Shared\ReferenceCollection;
 class Folder implements TypeInterface,ResourceInterface
 {
     private FolderId $folderId;
-    private string $name;
+    private FolderPath $name;
     private DateTime $created;
     private ReferenceCollection $childResources;
     private ?FolderId $parentFolderId;
 
-    public function __construct(FolderId $folderId, string $root, DateTime $created,?FolderId $parentFolderId)
+    public function __construct(FolderId $folderId, FolderPath $path, DateTime $created, ?FolderId $parentFolderId)
     {
         $this->folderId = $folderId;
-        $this->name = $root;
+        $this->name = $path;
         $this->created = $created;
         $this->childResources = new ReferenceCollection();
         $this->parentFolderId = $parentFolderId;
@@ -37,9 +38,9 @@ class Folder implements TypeInterface,ResourceInterface
     }
 
     /**
-     * @return string
+     * @return ValueObjectString
      */
-    public function getName(): string
+    public function getName(): ValueObjectString
     {
         return $this->name;
     }
